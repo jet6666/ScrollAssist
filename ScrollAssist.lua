@@ -71,7 +71,7 @@ function M:setGap( valueX,valueY  )
   self._params.heightGap = valueY 
   self._params.widthGap = valueX 
 end
- 
+
 
 -- 列表,注意，这里只显示已经显示出来过的元素
 function M:getItemList()
@@ -86,7 +86,7 @@ function M:scrollListener_( event )
   if event.name =="began" or event.name =="moved" or event.name =="ended" then 
     local h= self._params.itemSize.height + self._params.heightGap
     local H=H(self._view )
-    local T = self._nums ;
+    local T = CALC_3(self._nums==nil,0,self._nums)
     --显示范围
     local y  = math.abs(self._view:getScrollNode():getPositionY() -  self._y)
     local idMin = T - math.ceil( (y + H) /h)
@@ -101,6 +101,10 @@ end
 function M:getRange_(  id  ,total  )
   local h=  self._params.itemSize.height+ self._params.heightGap
   local H= H(self._view )
+  local totalX = total 
+  --注意下面的id ,total已经折换成单行的格式
+  id = math.floor((id-1)/self._params.cellCount)+1 --    (math.floor((i-1)/params.cellCount)+1)*(params.heightGap+params.itemSize.height);
+  total = math.floor((total-1)/self._params.cellCount)+1
   local yScroll = H -(total -id+1 )* h
   if total*h <= H then yScroll = H- total*h 
   else    yScroll = RANGE(yScroll , H -(total+1 )* h , 0 )    
@@ -109,7 +113,8 @@ function M:getRange_(  id  ,total  )
   --显示范围
   local y  = math.abs(self._view:getScrollNode():getPositionY() - self._y)
   local idMin = total - math.ceil( (y + H) /h)
-  local idMax = total - math.floor(y/h) --print(">出现的是 > " , idMin ,"  <=",idMax , ",y=",y ,",total",total,",yScroll=",yScroll,h,H)
+  local idMax = total - math.floor(y/h)    print(">出现的是 > " , idMin ,"  <=",idMax , ",y=",y ,",total",total,",yScroll=",yScroll,h,H)
+  if total*h <= H then idMax =totalX end  
   return math.max(0,idMin),idMax
 end
 
@@ -195,9 +200,7 @@ function M:fill(nodes,id)
       itemSize = CCSize(50,50)
       },self._params);
   self._params = params
-  if nodes == 0 then
-    return nil;
-  end 
+ 
   --删除多余的
   local item 
   if self._nums ~=nil then 
@@ -205,6 +208,9 @@ function M:fill(nodes,id)
       item = self._nodes[i]
       if item~=nil then item:removeFromParent()  self._nodes[i] =nil end 
     end 
+  end  
+  if nodes == 0 then
+    return nil;
   end 
   self._nums = nodes 
   -- 一个容器node
@@ -214,6 +220,7 @@ function M:fill(nodes,id)
   --滚动到的范围
   if id == nil then id = 1 end 
   id =math.max(id,math.min(nodes,id) ,1)
+  params.cellCount = math.floor(W(view)/params.itemSize.width);
   local min,max = self:getRange_(id , nodes)
   --先调整一下原先存在的位置  显示的是> min <=max
 
@@ -222,9 +229,9 @@ function M:fill(nodes,id)
   if view.direction == cc.ui.UIScrollView.DIRECTION_VERTICAL then
 
     --自动布局
-    if params.autoTable then
-      params.cellCount = math.floor(W(view)/params.itemSize.width);
-    end
+--    if params.autoTable then
+    params.cellCount = math.floor(W(view)/params.itemSize.width);
+--    end
 
     --自动间隔,设置成０，不然就会出现宽的出来奇怪的排版
     if params.autoGap then
@@ -238,37 +245,37 @@ function M:fill(nodes,id)
     self:render_(min,max,false )
     self:renderOld_(min,max,false )
   else
-    if(params.autoTable)then
-      params.rowCount = math.floor(H(view)/params.itemSize.height);
-    end
+--    if(params.autoTable)then
+--      params.rowCount = math.floor(H(view)/params.itemSize.height);
+--    end
 
-    if(params.autoGap)then
-      params.heightGap = (H(view)-(params.rowCount*params.itemSize.height))/(params.rowCount+1);
-      params.widthGap = params.heightGap;
-    end
+--    if(params.autoGap)then
+--      params.heightGap = (H(view)-(params.rowCount*params.itemSize.height))/(params.rowCount+1);
+--      params.widthGap = params.heightGap;
+--    end
 
-    params.cellCount = CALC_3(nodes%params.rowCount==0,math.floor(nodes/params.rowCount),math.floor(nodes/params.rowCount)+1);
---      print(params.cellCount)
-    S_SIZE(innerContainer,(params.itemSize.width+params.widthGap)*params.cellCount+params.widthGap,H(view));
+--    params.cellCount = CALC_3(nodes%params.rowCount==0,math.floor(nodes/params.rowCount),math.floor(nodes/params.rowCount)+1);
+----      print(params.cellCount)
+--    S_SIZE(innerContainer,(params.itemSize.width+params.widthGap)*params.cellCount+params.widthGap,H(view));
 --      print( (params.itemSize.width+params.widthGap)*params.cellCount+params.widthGap)
 
-    for i = 1, #(nodes) do
+--    for i = 1, #(nodes) do
 
-      local n = nodes[i];
-      local x = 0.0;
-      local y = 0.0;
+--      local n = nodes[i];
+--      local x = 0.0;
+--      local y = 0.0;
 
-      --不管描点如何，总是有标准居中方式设置坐标。
-      x = params.widthGap +  math.floor((i-1) / params.rowCount) * (params.widthGap+params.itemSize.width);
-      y = H(innerContainer)-(math.floor((i-1) % params.rowCount) +1)*(params.heightGap+params.itemSize.height);
-      x = x + W(n) * AX(n);
-      y = y + H(n) * AY(n);
+--      --不管描点如何，总是有标准居中方式设置坐标。
+--      x = params.widthGap +  math.floor((i-1) / params.rowCount) * (params.widthGap+params.itemSize.width);
+--      y = H(innerContainer)-(math.floor((i-1) % params.rowCount) +1)*(params.heightGap+params.itemSize.height);
+--      x = x + W(n) * AX(n);
+--      y = y + H(n) * AY(n);
 
-      S_XY(n,x,y);
---        print(">>>>" , i , x , y )
-      n:addTo(innerContainer);
+--      S_XY(n,x,y);
+----        print(">>>>" , i , x , y )
+--      n:addTo(innerContainer);
 
-    end
+--    end
 
   end
 
